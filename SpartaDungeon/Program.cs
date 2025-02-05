@@ -71,7 +71,9 @@ namespace SpartaDungeon
                 new Item {itemName = "청동 도끼", itemStatType = "공격력", itemDesc = "어디선가 사용됐던거 같은 도끼입니다.",
                     statNum = 5, goldNum = 1500, itemType = "무기"},
                 new Item {itemName = "스파르타의 창", itemStatType = "공격력", itemDesc = "스파르타의 전사들이 사용했다는 전설의 창입니다.",
-                    statNum = 7, goldNum = 3176, itemType = "무기"}
+                    statNum = 7, goldNum = 3176, itemType = "무기"},
+                new Item {itemName = "불길한 검", itemStatType = "공격력", itemDesc = "이전 사용자의 이름이 '불길한'이었다고 합니다.",
+                    statNum = 10, goldNum = 4000, itemType = "무기"}
             });
 
             for (int i = 0; i < itemList.Count; i++)
@@ -135,6 +137,7 @@ namespace SpartaDungeon
                             SaveData();
                             break;
                         default:
+                            WrongInput();
                             break;
                     }
                 }
@@ -551,33 +554,41 @@ namespace SpartaDungeon
             if (isNum)
             {
                 num = int.Parse(input);
-                switch (num)
+                if (hero.healthTotal > 0)
                 {
-                    case 1:
-                        chosenDef = recDef1;
-                        dungeonName = "쉬운 던전";
-                        chosenReward = reward1;
-                        CalculateDungeon();
-                        break;
-                    case 2:
-                        chosenDef = recDef2;
-                        dungeonName = "일반 던전";
-                        chosenReward = reward2;
-                        CalculateDungeon();
-                        break;
-                    case 3:
-                        chosenDef = recDef3;
-                        dungeonName = "어려운 던전";
-                        chosenReward = reward3;
-                        CalculateDungeon();
-                        break;
-                    case 0:
-                        Console.Clear();
-                        break;
-                    default:
-                        WrongInput();
-                        EnterDungeon();
-                        break;
+                    switch (num)
+                    {
+                        case 1:
+                            chosenDef = recDef1;
+                            dungeonName = "쉬운 던전";
+                            chosenReward = reward1;
+                            CalculateDungeon();
+                            break;
+                        case 2:
+                            chosenDef = recDef2;
+                            dungeonName = "일반 던전";
+                            chosenReward = reward2;
+                            CalculateDungeon();
+                            break;
+                        case 3:
+                            chosenDef = recDef3;
+                            dungeonName = "어려운 던전";
+                            chosenReward = reward3;
+                            CalculateDungeon();
+                            break;
+                        case 0:
+                            Console.Clear();
+                            break;
+                        default:
+                            WrongInput();
+                            EnterDungeon();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("체력이 충분하지 않아 밖으로 나갑니다.\n");
                 }
             }
             else
@@ -602,30 +613,34 @@ namespace SpartaDungeon
             {
                 int loseChance = 40;
                 int roll = randChance.Next(1, 101);
-                if (roll > loseChance) WinDungeon(randomHealth, rewardThisTurn);
+                if (roll > loseChance) WinDungeon(randomHealth, rewardThisTurn, hero.healthTotal, hero.gold);
                 else FailDungeon();
             }
             else
             {
-                WinDungeon(randomHealth, rewardThisTurn);
+                int heroHealthBefore = hero.healthTotal;
+                int goldBefore = hero.gold;
+                WinDungeon(randomHealth, rewardThisTurn, heroHealthBefore, goldBefore);
             }
         }
 
-        public static void WinDungeon(int healthReduction, int reward)
+        public static void WinDungeon(int healthReduction, int reward, int heroHealthBefore, int goldBefore)
         {
+            heroHealthBefore = hero.healthTotal;
+            goldBefore = hero.gold;
             hero.healthTotal -= healthReduction;
+            if (hero.healthTotal < 0) hero.healthTotal = 0;
             hero.gold += reward;
+            LevelUp();
 
-            WinScreen();
+            WinScreen(heroHealthBefore, goldBefore);
         }
 
-        public static void WinScreen()
+        public static void WinScreen(int heroHealthBefore, int goldBefore)
         {
-            int heroHealthBefore = hero.healthTotal;
-            int goldBefore = hero.gold;
-
             Console.WriteLine("던전 클리어");
             Console.WriteLine("축하합니다!!\n쉬운 던전을 클리어 하였습니다.\n");
+            Console.WriteLine($"레벨 업! 최종 레벨: {hero.levelNum}");
             Console.WriteLine($"[탐험 결과]\n체력 {heroHealthBefore} -> {hero.healthTotal}");
             Console.WriteLine($"Gold {goldBefore} G -> {hero.gold} G\n\n0. 나가기\n");
             ActionLine();
@@ -643,7 +658,7 @@ namespace SpartaDungeon
             else
             {
                 WrongInput();
-                WinScreen();
+                WinScreen(hero.healthTotal, hero.gold);
             }
         }
         public static void FailDungeon()
@@ -651,7 +666,6 @@ namespace SpartaDungeon
             float health = hero.healthTotal;
             health = hero.healthTotal * 0.5f;
             hero.healthTotal = (int)health;
-            LevelUp();
             Console.Clear();
             Console.WriteLine($"탐험에 실패하여 체력이 절반 감소했습니다. 남은 체력은 {hero.healthTotal}입니다.\n");
             EnterDungeon();
@@ -665,7 +679,6 @@ namespace SpartaDungeon
 
         public static void Rest()
         {
-            hero.healthTotal = 0;
             Console.WriteLine("휴식하기");
             Console.WriteLine($"{restGold} G 를 내면 체력을 회복할 수 있습니다. (보유 골드 : {hero.gold} G)\n");
 
