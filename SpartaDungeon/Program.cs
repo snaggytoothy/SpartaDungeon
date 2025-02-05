@@ -4,7 +4,6 @@ namespace SpartaDungeon
 {
     internal class Program
     {
-        //public static int gold = 1500;
         public static int num;
         public static int restGold = 500;
         public static int chosenReward;
